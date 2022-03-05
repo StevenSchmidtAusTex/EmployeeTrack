@@ -140,3 +140,128 @@ function addDepartment() {
             });
         });
 }
+// Add New Role
+function addRole() {
+    const sql = `SELECT * FROM department`;
+    db.query(sql, (err, res) => {
+        if (err) throw err;
+        let departments = [];
+        res.forEach((department) => departments.push(department.name));
+        inquirer
+            .prompt([
+                {
+                    type: "input",
+                    name: "roleName",
+                    message: "What is the name of the role?"
+                },
+                {
+                    type: "input",
+                    name: "roleSalary",
+                    message: "Salary?",
+                    validate(value) {
+                        const valid = !isNaN(parseInt(value));
+                        return valid || 'Please enter a valid number.';
+                    }
+                },
+                {
+                    type: 'list',
+                    name: 'roleDept',
+                    message: "Which department?",
+                    choices: departments
+                }
+            ])
+            .then((response) => {
+                let deptId;
+                res.forEach((department) => {
+                    if (department.name === response.roleDept) {
+                        deptId = department.id;
+                    }
+                });
+                const sql = `INSERT INTO role (title, salary, department_id) 
+                VALUES (?, ?, ?)`
+                const params = [response.roleName, response.roleSalary, deptId];
+
+                db.query(sql, params, (err, res) => {
+                    if (err) {
+                        throw err;
+                    }
+                    console.log(`Added ${response.roleName} to the database`);
+                    Menu();
+                });
+            });
+    });
+    
+}
+
+// Add New Employee
+function addEmployee() {
+    let managers = ["None"];
+    let managerData = [];
+    const managerSql = `SELECT id, CONCAT (first_name, ' ', last_name) AS name 
+    FROM employee;`
+    db.query(managerSql, (err, res) => {
+        if (err) throw err;
+        res.forEach((emp) => {
+            managers.push(emp.name);
+            managerData.push(emp);
+        });
+    });
+    // Roles Prompt
+    const sql = `SELECT * FROM role`;
+    db.query(sql, (err, res) => {
+        if (err) throw err;
+        let roles = [];
+        res.forEach((role) => roles.push(role.title));
+        inquirer
+            .prompt([
+                {
+                    type: "input",
+                    name: "firstName",
+                    message: "First name?"
+                },
+                {
+                    type: "input",
+                    name: "lastName",
+                    message: "Last name?"
+                },
+                {
+                    type: 'list',
+                    pageSize: roles.length,
+                    name: 'empRole',
+                    message: "Role?",
+                    choices: roles
+                },
+                {
+                    type: 'list',
+                    pageSize: managers.length,
+                    name: 'empManager',
+                    message: "Employee's Manager?",
+                    choices: managers
+                }
+            ])
+            .then((response) => {
+                let roleId;
+                res.forEach((role) => {
+                    if (role.title === response.empRole) {
+                        roleId = role.id;
+                    }
+                });
+                let managerId;
+                managerData.forEach((manager) => {
+                    if (manager.name === response.empManager) {
+                        managerId = manager.id;
+                    }
+                })
+                const sql=`INSERT INTO employee (first_name, last_name, role_id, manager_id) 
+                VALUES (?, ?, ?, ?)`
+                const params=[response.firstName, response.lastName, roleId, managerId];
+                db.query(sql,params,(err, res) => {
+                    if (err) {
+                        throw err;
+                    }
+                    console.log(`Added ${response.firstName} ${response.lastName} to the database`);
+                    Menu();
+                });
+            });
+    });
+}
