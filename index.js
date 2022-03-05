@@ -143,7 +143,7 @@ function addDepartment() {
 // Add New Role
 function addRole() {
     const sql = `SELECT * FROM department`;
-    db.query(sql, (err, res) => {
+    db.query(sql,(err, res) => {
         if (err) throw err;
         let departments = [];
         res.forEach((department) => departments.push(department.name));
@@ -199,7 +199,7 @@ function addEmployee() {
     let managerData = [];
     const managerSql = `SELECT id, CONCAT (first_name, ' ', last_name) AS name 
     FROM employee;`
-    db.query(managerSql, (err, res) => {
+    db.query(managerSql,(err, res) => {
         if (err) throw err;
         res.forEach((emp) => {
             managers.push(emp.name);
@@ -264,4 +264,70 @@ function addEmployee() {
                 });
             });
     });
+}
+// Update Role
+function updateRole() {
+    let employees = [];
+    let employeeData = [];
+    const employeeSql = `SELECT id, CONCAT (first_name, ' ', last_name) AS name 
+    FROM employee;`
+    db.query(employeeSql,(err, res) => {
+        if (err) throw err;
+        res.forEach((emp) => {
+            employees.push(emp.name);
+            employeeData.push(emp);
+        });
+    });
+    const sql = `SELECT * FROM role`;
+    db.query(sql,(err, res) => {
+        if (err) throw err;
+        let roles = [];
+        res.forEach((role) => roles.push(role.title));
+
+        inquirer
+            .prompt([
+                {
+                    type: 'list',
+                    pageSize: employees.length,
+                    name: 'empName',
+                    message: "Which employee's role to update?",
+                    choices: employees
+                },
+                {
+                    type: 'list',
+                    pageSize: roles.length,
+                    name: 'roleName',
+                    message: "What new role?",
+                    choices: roles
+                }
+            ])
+            .then((response) => {
+                let roleId;
+                res.forEach((role) => {
+                    if (role.title === response.roleName) {
+                        roleId = role.id;
+                    }
+                });
+                let empId;
+                employeeData.forEach((emp) => {
+                    if (emp.name === response.empName) {
+                        empId = emp.id;
+                    }
+                })
+
+                const sql = `UPDATE employee
+                SET role_id = ?
+                WHERE id = ?`
+                const params = [roleId, empId];
+
+                db.query(sql, params, (err, res) => {
+                    if (err) {
+                        throw err;
+                    }
+                    console.log(`Role Updated`);
+                    Menu();
+                });
+            });
+    });
+
 }
